@@ -44,6 +44,26 @@ def create_user():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/getUser', methods=['GET'])
+def get_user():
+    data = request.get_json()  # Get the JSON data from the request body
+    if not data or 'userId' not in data:
+        return jsonify({"error": "userId is required"}), 400  # Return 400 if entry_id is missing
+    
+    user_id = data['userId']  # Extract the entry_id from the request data
+    
+    try:
+        entry = journal_entries_collection.find_one({"_id": ObjectId(user_id)})
+        
+        if entry:
+            entry['_id'] = str(entry['_id'])  # Convert ObjectId to string for JSON serialization
+            return jsonify(entry['name']), 200  # Return the entry data
+        else:
+            return jsonify({"error": "Entry not found"}), 404  # Return 404 if the entry doesn't exist
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Handle other errors
+
+
 @app.route('/createJournalEntry', methods=['POST'])
 def create_journal_entry():
     try:
@@ -70,6 +90,33 @@ def get_journal_entry():
             return jsonify(entry['entry']), 200  # Return the entry data
         else:
             return jsonify({"error": "Entry not found"}), 404  # Return 404 if the entry doesn't exist
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Handle other errors
+
+
+@app.route('/updateJournalEntry', methods=['PUT'])
+def update_journal_entry():
+    data = request.get_json()  # Get the updated data from the request body
+
+    entry_id = data['entryId']
+    updated_entry = data['updatedEntry']
+    print(data)
+    print(entry_id)
+    print(updated_entry)
+    if not data or not entry_id or not updated_entry:
+        return jsonify({"error": "No data provided for update"}), 400  # Return 400 if no data is provided
+    
+    try:
+        # Find the journal entry by _id and update with new data
+        result = journal_entries_collection.update_one(
+            {"_id": ObjectId(entry_id)},  # Find entry by _id
+            {"$set": { 'entry': updated_entry }}  # Set the updated fields
+        )
+        
+        if result.matched_count == 0:
+            return jsonify({"error": "Entry not found"}), 404  # Return 404 if entry not found
+        
+        return jsonify({"message": "Entry updated successfully"}), 200  # Return success message
     except Exception as e:
         return jsonify({"error": str(e)}), 500  # Handle other errors
 
@@ -124,11 +171,38 @@ def get_feelings_entry():
         
         if entry:
             entry['_id'] = str(entry['_id'])  # Convert ObjectId to string for JSON serialization
-            return jsonify(entry['entry']), 200  # Return the entry data
+            return jsonify(entry['rating']), 200  # Return the entry data
         else:
             return jsonify({"error": "Entry not found"}), 404  # Return 404 if the entry doesn't exist
     except Exception as e:
         return jsonify({"error": str(e)}), 500  # Handle other errors
+
+
+@app.route('/getFeelingsEntriesByUser', methods=['GET'])
+def get_feelings_entries_by_user():
+    data = request.get_json()
+        
+    user_id = data['userId']
+    if not user_id:
+        return jsonify({"error": "userId is required"}), 400  # Return 400 if either is missing
+
+    try:
+        # Find all entries that match the provided userId and date
+        entries = feelings_entries_collection.find({"userId": user_id})
+        
+        # Convert the entries to a list and ensure _id is a string
+        entries_list = []
+        for entry in entries:
+            entry['_id'] = str(entry['_id'])
+            entries_list.append(entry['rating'])
+        
+        if entries_list:
+            return jsonify(entries_list), 200  # Return the entries data
+        else:
+            return jsonify({"error": "No entries found for the specified user and date"}), 404  # Return 404 if no entries are found
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Handle other errors
+    
 
 
 @app.route('/getFeelingsEntriesByUserAndDate', methods=['GET'])
@@ -148,7 +222,7 @@ def get_feelings_entries_by_user_and_date():
         entries_list = []
         for entry in entries:
             entry['_id'] = str(entry['_id'])
-            entries_list.append(entry['entry'])
+            entries_list.append(entry['rating'])
         
         if entries_list:
             return jsonify(entries_list), 200  # Return the entries data
@@ -156,8 +230,22 @@ def get_feelings_entries_by_user_and_date():
             return jsonify({"error": "No entries found for the specified user and date"}), 404  # Return 404 if no entries are found
     except Exception as e:
         return jsonify({"error": str(e)}), 500  # Handle other errors
+    
+
+# @app.route('/createQuestion', methods=['POST'])
+# def create_question():
+#     try:
+#         data = request.get_json()  # Get the data from the POST request
+#         result = feelings_entries_collection.insert_one(data)  # Insert the journal entry into the collection
+#         return jsonify({"message": "Feelings entry added", "id": str(result.inserted_id)}), 201
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(port=8000, debug=True)
+
+
+
+
 
 
