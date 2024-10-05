@@ -98,18 +98,15 @@ def get_journal_entry():
 def update_journal_entry():
     data = request.get_json()  # Get the updated data from the request body
 
-    entry_id = data['entryId']
+    journal_entry_id = data['journalEntryId']
     updated_entry = data['updatedEntry']
-    print(data)
-    print(entry_id)
-    print(updated_entry)
-    if not data or not entry_id or not updated_entry:
+    if not data or not journal_entry_id or not updated_entry:
         return jsonify({"error": "No data provided for update"}), 400  # Return 400 if no data is provided
     
     try:
         # Find the journal entry by _id and update with new data
         result = journal_entries_collection.update_one(
-            {"_id": ObjectId(entry_id)},  # Find entry by _id
+            {"_id": ObjectId(journal_entry_id)},  # Find entry by _id
             {"$set": { 'entry': updated_entry }}  # Set the updated fields
         )
         
@@ -117,6 +114,27 @@ def update_journal_entry():
             return jsonify({"error": "Entry not found"}), 404  # Return 404 if entry not found
         
         return jsonify({"message": "Entry updated successfully"}), 200  # Return success message
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Handle other errors
+
+
+@app.route('/deleteJournalEntry', methods=['DELETE'])
+def delete_journal_entry():
+    data = request.get_json()  # Get the data from the request body
+
+    # Ensure that '_id' is provided in the data
+    journal_entry_id = data['journalEntryId']
+    if not data or not journal_entry_id:
+        return jsonify({"error": "Entry ID is required"}), 400  # Return 400 if no _id is provided
+
+    try:
+        # Find the journal entry by _id and delete it
+        result = journal_entries_collection.delete_one({"_id": ObjectId(journal_entry_id)})
+        
+        if result.deleted_count == 0:
+            return jsonify({"error": "Entry not found"}), 404  # Return 404 if no entry was found
+        
+        return jsonify({"message": "Entry deleted successfully"}), 200  # Return success message
     except Exception as e:
         return jsonify({"error": str(e)}), 500  # Handle other errors
 
@@ -204,7 +222,6 @@ def get_feelings_entries_by_user():
         return jsonify({"error": str(e)}), 500  # Handle other errors
     
 
-
 @app.route('/getFeelingsEntriesByUserAndDate', methods=['GET'])
 def get_feelings_entries_by_user_and_date():
     data = request.get_json()
@@ -232,6 +249,51 @@ def get_feelings_entries_by_user_and_date():
         return jsonify({"error": str(e)}), 500  # Handle other errors
     
 
+@app.route('/updateFeelingsEntry', methods=['PUT'])
+def update_feelings_entry():
+    data = request.get_json()  # Get the updated data from the request body
+
+    feelings_entry_id = data['feelingsEntryId']
+    updated_rating = data['updatedRating']
+    if not data or not feelings_entry_id or not updated_rating:
+        return jsonify({"error": "No data provided for update"}), 400  # Return 400 if no data is provided
+    
+    try:
+        # Find the journal entry by _id and update with new data
+        result = feelings_entries_collection.update_one(
+            {"_id": ObjectId(feelings_entry_id)},  # Find entry by _id
+            {"$set": { 'rating': updated_rating }}  # Set the updated fields
+        )
+        
+        if result.matched_count == 0:
+            return jsonify({"error": "Entry not found"}), 404  # Return 404 if entry not found
+        
+        return jsonify({"message": "Entry updated successfully"}), 200  # Return success message
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Handle other errors
+
+
+@app.route('/deleteFeelingsEntry', methods=['DELETE'])
+def delete_feelings_entry():
+    data = request.get_json()  # Get the data from the request body
+
+    # Ensure that '_id' is provided in the data
+    feelings_entry_id = data['feelingsEntryId']
+    if not data or not feelings_entry_id:
+        return jsonify({"error": "Entry ID is required"}), 400  # Return 400 if no _id is provided
+
+    try:
+        # Find the journal entry by _id and delete it
+        result = feelings_entries_collection.delete_one({"_id": ObjectId(feelings_entry_id)})
+        
+        if result.deleted_count == 0:
+            return jsonify({"error": "Entry not found"}), 404  # Return 404 if no entry was found
+        
+        return jsonify({"message": "Entry deleted successfully"}), 200  # Return success message
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Handle other errors
+    
+
 # @app.route('/createQuestion', methods=['POST'])
 # def create_question():
 #     try:
@@ -243,6 +305,12 @@ def get_feelings_entries_by_user_and_date():
 
 if __name__ == "__main__":
     app.run(port=8000, debug=True)
+
+
+
+
+
+
 
 
 
