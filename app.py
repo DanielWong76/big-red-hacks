@@ -48,7 +48,7 @@ def get_user():
     if not data or 'userId' not in data:
         return jsonify({"error": "userId is required"}), 400  # Return 400 if entry_id is missing
     
-    user_id = data['userId']  # Extract the entry_id from the request data
+    user_id = data.get('userId')  # Extract the entry_id from the request data
     
     try:
         entry = journal_entries_collection.find_one({"_id": ObjectId(user_id)})
@@ -78,7 +78,7 @@ def get_journal_entry():
     if not data or 'journalEntryId' not in data:
         return jsonify({"error": "entryId is required"}), 400  # Return 400 if entry_id is missing
     
-    journal_entry_id = data['journalEntryId']  # Extract the entry_id from the request data
+    journal_entry_id = data.get('journalEntryId')  # Extract the entry_id from the request data
     
     try:
         entry = journal_entries_collection.find_one({"_id": ObjectId(journal_entry_id)})
@@ -96,8 +96,8 @@ def get_journal_entry():
 def update_journal_entry():
     data = request.get_json()  # Get the updated data from the request body
 
-    journal_entry_id = data['journalEntryId']
-    updated_entry = data['updatedEntry']
+    journal_entry_id = data.get('journalEntryId')
+    updated_entry = data.get('updatedEntry')
     if not data or not journal_entry_id or not updated_entry:
         return jsonify({"error": "No data provided for update"}), 400  # Return 400 if no data is provided
     
@@ -121,7 +121,7 @@ def delete_journal_entry():
     data = request.get_json()  # Get the data from the request body
 
     # Ensure that '_id' is provided in the data
-    journal_entry_id = data['journalEntryId']
+    journal_entry_id = data.get('journalEntryId')
     if not data or not journal_entry_id:
         return jsonify({"error": "Entry ID is required"}), 400  # Return 400 if no _id is provided
 
@@ -141,8 +141,8 @@ def delete_journal_entry():
 def get_journal_entries_by_user_and_date():
     data = request.get_json()
         
-    user_id = data['userId']
-    date = data['date']
+    user_id = data.get('userId')
+    date = data.get('date')
     if not user_id or not date:
         return jsonify({"error": "Both userId and date are required"}), 400  # Return 400 if either is missing
 
@@ -205,7 +205,7 @@ def get_feelings_entry():
     if not data or 'feelingsEntryId' not in data:
         return jsonify({"error": "entryId is required"}), 400  # Return 400 if entry_id is missing
     
-    feelings_entry_id = data['feelingsEntryId']  # Extract the entry_id from the request data
+    feelings_entry_id = data.get('feelingsEntryId')  # Extract the entry_id from the request data
     
     try:
         entry = feelings_entries_collection.find_one({"_id": ObjectId(feelings_entry_id)})
@@ -223,7 +223,7 @@ def get_feelings_entry():
 def get_feelings_entries_by_user():
     data = request.get_json()
         
-    user_id = data['userId']
+    user_id = data.get('userId')
     if not user_id:
         return jsonify({"error": "userId is required"}), 400  # Return 400 if either is missing
 
@@ -249,8 +249,8 @@ def get_feelings_entries_by_user():
 def get_feelings_entries_by_user_and_date():
     data = request.get_json()
         
-    user_id = data['userId']
-    date = data['date']
+    user_id = data.get('userId')
+    date = data.get('date')
     if not user_id or not date:
         return jsonify({"error": "Both userId and date are required"}), 400  # Return 400 if either is missing
 
@@ -276,8 +276,8 @@ def get_feelings_entries_by_user_and_date():
 def update_feelings_entry():
     data = request.get_json()  # Get the updated data from the request body
 
-    feelings_entry_id = data['feelingsEntryId']
-    updated_rating = data['updatedRating']
+    feelings_entry_id = data.get('feelingsEntryId')
+    updated_rating = data.get('updatedRating')
     if not data or not feelings_entry_id or not updated_rating:
         return jsonify({"error": "No data provided for update"}), 400  # Return 400 if no data is provided
     
@@ -301,7 +301,7 @@ def delete_feelings_entry():
     data = request.get_json()  # Get the data from the request body
 
     # Ensure that '_id' is provided in the data
-    feelings_entry_id = data['feelingsEntryId']
+    feelings_entry_id = data.get('feelingsEntryId')
     if not data or not feelings_entry_id:
         return jsonify({"error": "Entry ID is required"}), 400  # Return 400 if no _id is provided
 
@@ -319,9 +319,9 @@ def delete_feelings_entry():
 @app.route('/callCompanion', methods=['POST'])
 def call_companion():
     data = request.get_json()
-    message = data['message']
-    user_id = data['userId']
-    conversation_id = data['conversationId']
+    message = data.get('message')
+    user_id = data.get('userId')
+    conversation_id = data.get('conversationId')
 
     if not data or not message:
         return jsonify({"error": "Message is required"}), 400
@@ -363,8 +363,8 @@ def call_companion():
 @app.route('/sendJournalEntryToCompanion', methods=['POST'])
 def send_entry_to_companion():
     data = request.get_json()
-    journal_entry_id = data['journalEntryId']
-    user_id = data['userId']
+    journal_entry_id = data.get('journalEntryId')
+    user_id = data.get('userId')
 
     if not data or not journal_entry_id:
         return jsonify({"error": "journalEntryId is required"}), 400
