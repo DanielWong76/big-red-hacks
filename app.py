@@ -1,14 +1,11 @@
-
 from flask import Flask, request, jsonify
 
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from bson.objectid import ObjectId
-
+from hf import call_llm
 
 import certifi
-
-
 
 app = Flask(__name__)
 
@@ -293,6 +290,48 @@ def delete_feelings_entry():
     except Exception as e:
         return jsonify({"error": str(e)}), 500  # Handle other errors
     
+@app.route('/callCompanion', methods=['POST'])
+def call_companion():
+    data = request.get_json()
+    message = data['message']
+
+    if not data or not message:
+        return jsonify({"error": "Message is required"}), 400
+    
+    try:
+        instruction = "Respond to this statement empathetically"
+        result = call_llm(instruction, message)
+        if not result or result == "":
+            return jsonify({"error": "LLM did not return a valid result"}), 400
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/sendJournalEntryToCompanion', methods=['POST'])
+def send_entry_to_companion():
+    data = request.get_json()
+    journal_entry_id = data['journalEntryId']
+
+    if not data or not journal_entry_id:
+        return jsonify({"error": "journalEntryId is required"}), 400
+    
+    try:
+        entry = journal_entries_collection.find_one({"_id": ObjectId(journal_entry_id)})
+
+        if not entry:
+            return jsonify({"error": "Entry not found"}), 404  # Return 404 if the entry doesn't exist
+        
+        instruction = "Here is a recap of my day: " + entry['content'] + " Please respond empathetically"
+
+        result = call_llm(instruction, "")
+
+        if not result or result == "":
+            return jsonify({"error": "LLM did not return a valid result"}), 400
+
+        return jsonify(result), 200  # Return the entry data
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Handle other errors
+
 
 # @app.route('/createQuestion', methods=['POST'])
 # def create_question():
@@ -305,15 +344,3 @@ def delete_feelings_entry():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080, debug=True)
-
-
-
-
-
-
-
-
-
-
-
-
