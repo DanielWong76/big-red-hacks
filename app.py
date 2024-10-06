@@ -243,7 +243,7 @@ def get_feelings_entries_by_user():
             return jsonify({"error": "No entries found for the specified user and date"}), 404  # Return 404 if no entries are found
     except Exception as e:
         return jsonify({"error": str(e)}), 500  # Handle other errors
-    
+
 
 @app.route('/getFeelingsEntriesByUserAndDate', methods=['GET'])
 def get_feelings_entries_by_user_and_date():
@@ -320,16 +320,43 @@ def delete_feelings_entry():
 def call_companion():
     data = request.get_json()
     message = data['message']
+    user_id = data['userId']
+    conversation_id = data['conversationId']
 
     if not data or not message:
         return jsonify({"error": "Message is required"}), 400
     
+    if not user_id:
+        return jsonify({"error": "userId is required"}), 400
+    
     try:
-        instruction = "Respond to this statement empathetically"
+        if conversation_id is None or conversation_id == "":
+            instruction = "Respond to this statement empathetically"
+        else:
+            conversation = conversations_collection.find_one({"_id": ObjectId(conversation_id)})
+            if conversation is None:
+                return jsonify({"error": "Conversation not found"}), 400
+            
+            instruction = "We are having a conversation. I was the first message and every other message was you: "
+            for x in range(len(conversation['messages'])):
+                instruction += "'" + conversation['messages'][x] + "'"
+                if (x != len(conversation['messages']) - 1):
+                    instruction += ", "
+            instruction += ". The input is my last message, please respond empathetically"
+
         result = call_llm(instruction, message)
         if not result or result == "":
             return jsonify({"error": "LLM did not return a valid result"}), 400
-        return jsonify(result), 200
+        
+        if conversation_id is None or conversation_id == "":
+            conversation_entry = conversations_collection.insert_one({"userId": user_id, "messages": [message, result]})
+            conversation_id =  str(conversation_entry.inserted_id)
+        else:
+            conversations_collection.update_one(
+                {"_id": ObjectId(conversation_id)},  # Find entry by _id
+                {"$set": { 'messages': conversation['messages'] + [message, result] }}
+                )
+        return jsonify({"conversationId": conversation_id, "response": result}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
@@ -337,24 +364,33 @@ def call_companion():
 def send_entry_to_companion():
     data = request.get_json()
     journal_entry_id = data['journalEntryId']
+    user_id = data['userId']
 
     if not data or not journal_entry_id:
         return jsonify({"error": "journalEntryId is required"}), 400
     
+    if not user_id:
+        return jsonify({"error": "userId is required"}), 400
+    
     try:
-        entry = journal_entries_collection.find_one({"_id": ObjectId(journal_entry_id)})
+        # Check if UserId exists
+        if not users_collection.find_one({"_id": ObjectId(user_id)}):
+            return jsonify({"error": "User not found"}), 404
 
+        # Check if Journal Id exists
+        entry = journal_entries_collection.find_one({"_id": ObjectId(journal_entry_id)})
         if not entry:
-            return jsonify({"error": "Entry not found"}), 404  # Return 404 if the entry doesn't exist
-        
+            return jsonify({"error": "Journal Entry not found"}), 404  # Return 404 if the entry doesn't exist
+
         instruction = "Here is a recap of my day: " + entry['content'] + " Please respond empathetically"
 
         result = call_llm(instruction, "")
 
         if not result or result == "":
             return jsonify({"error": "LLM did not return a valid result"}), 400
-
-        return jsonify(result), 200  # Return the entry data
+        
+        conversation_entry = conversations_collection.insert_one({"userId": ObjectId(user_id), "messages": [entry['content'], result]})
+        return jsonify({"conversationId": str(conversation_entry.inserted_id), "response": result}), 200  # Return the conversation data
     except Exception as e:
         return jsonify({"error": str(e)}), 500  # Handle other errors
 
