@@ -166,6 +166,31 @@ def get_journal_entries_by_user_and_date():
         return jsonify({"error": str(e)}), 500  # Handle other errors
 
 
+@app.route('/getAllJournalEntries', methods=['GET'])
+def get_journal_entries():
+    try:
+        # Find all journal entries
+        entries = journal_entries_collection.find()
+        
+        # Convert the entries to a list and ensure _id is a string
+        entries_list = []
+        for entry in entries:
+            entry['_id'] = str(entry['_id'])
+            entries_list.append({
+                "id": entry['_id'],
+                "content": entry['content'],
+                "title": entry['title'],  # Assuming 'title' exists in your entries
+                "date": entry['date']     # Assuming 'date' exists in your entries
+            })
+        
+        if entries_list:
+            return jsonify(entries_list), 200  # Return the entries data
+        else:
+            return jsonify({"error": "No entries found"}), 404  # Return 404 if no entries are found
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Handle other errors
+
+
 @app.route('/createFeelingsEntry', methods=['POST'])
 def create_feelings_entry():
     try:
@@ -305,6 +330,13 @@ def delete_feelings_entry():
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8080, debug=True)
+
+
+
+
+
+
+
 
 
 
