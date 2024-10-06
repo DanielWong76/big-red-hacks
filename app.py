@@ -90,6 +90,26 @@ def get_journal_entry():
             return jsonify({"error": "Entry not found"}), 404  # Return 404 if the entry doesn't exist
     except Exception as e:
         return jsonify({"error": str(e)}), 500  # Handle other errors
+    
+
+@app.route('/getJournalEntryContent', methods=['POST'])
+def get_journal_entry_content():
+    data = request.get_json()  # Get the JSON data from the request body
+    if not data or 'title' not in data:
+        return jsonify({"error": "title is required"}), 400  # Return 400 if entry_id is missing
+    
+    title = data.get('title')  # Extract the entry_id from the request data
+    
+    try:
+        entry = journal_entries_collection.find_one({"title": title})
+        
+        if entry:
+            entry['_id'] = str(entry['_id'])  # Convert ObjectId to string for JSON serialization
+            return jsonify(entry['content']), 200  # Return the entry data
+        else:
+            return jsonify({"error": "Entry not found"}), 404  # Return 404 if the entry doesn't exist
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Handle other errors
 
 
 @app.route('/updateJournalEntry', methods=['PUT'])
